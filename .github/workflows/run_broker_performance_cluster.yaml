@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        erl_otp:
+        otp:
           - 24.1.1-emqx-1
         os:
           - ubuntu20.04
