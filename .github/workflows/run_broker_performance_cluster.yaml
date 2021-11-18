@@ -1,5 +1,9 @@
 name: Cluster Performance Test Suite
 
+concurrency:
+  group: slim-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
 #  schedule:
