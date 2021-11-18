@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     strategy:
+      fail-fast: false
       matrix:
         erl_otp:
           - 24.1.1-emqx-1
@@ -51,23 +52,23 @@ jobs:
         name: ${{ matrix.os}}
         path: _packages/**/*.zip
 
-  xmeter_start:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}
-        aws-region: ap-southeast-1
-    - name: Start Xmeter Services
-      run: |
-        aws ec2 start-instances --instance-ids i-0dd6d99916baaa1a8
-        aws ec2 start-instances --instance-ids i-05222103df01eb2d7
-        sleep 40;
-        aws ec2 start-instances --instance-ids i-0c5dccd394ed9be18
-        aws ec2 start-instances --instance-ids i-04c1c50b3e4952266
+#  xmeter_start:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - name: Configure AWS Credentials
+#      uses: aws-actions/configure-aws-credentials@v1
+#      with:
+#        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}
+#        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}
+#        aws-region: ap-southeast-1
+#    - name: Start Xmeter Services
+#      run: |
+#        aws ec2 start-instances --instance-ids i-0dd6d99916baaa1a8
+#        aws ec2 start-instances --instance-ids i-05222103df01eb2d7
+#        sleep 40;
+#        aws ec2 start-instances --instance-ids i-0c5dccd394ed9be18
+#        aws ec2 start-instances --instance-ids i-04c1c50b3e4952266
 
   terraform_emqx:
     runs-on: ubuntu-latest
@@ -110,7 +111,7 @@ jobs:
       working-directory: ./tf-test-automation/services/emqx
       id: server_ip
       run: |
-        terraform apply -auto-approve -var="emqx_lic=${{ secrets.EMQX_EE_LICENSE }}" -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}" -var="private_key=${{ secrets.CI_SSH_PRIVATE_KEY }}" -var="emqx_package=/tmp/emqx.zip"
+        terraform apply -auto-approve -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}" -var="private_key=${{ secrets.CI_SSH_PRIVATE_KEY }}" -var="emqx_package=/tmp/emqx.zip"
         echo "::set-output name=emqx_private_ips::$(terraform output emqx_private_ips)"
         echo "::set-output name=emqx_public_ips::$(terraform output emqx_public_ips)"
     - name: Rename and upload emqx tfstate
