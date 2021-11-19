@@ -141,56 +141,56 @@ jobs:
         echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip3 }}
         echo ${{ steps.emqx_private_ip.outputs.emqx_public_ip }}
 
-  terraform_mysql:
-    runs-on: ubuntu-latest
-
-    outputs:
-      mysql_ip: ${{ steps.mysql_ip.outputs.mysql_ip }}
-      mysql_url: ${{ steps.mysql_url.outputs.mysql_url }}
-    steps:
-    - name: Checkout tf-test-automation
-      uses: actions/checkout@v2
-      with:
-        repository: emqx/tf-test-automation
-        ref: emqx-broker
-        path: tf-test-automation
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1.3.2
-      with:
-        terraform_wrapper: false
-    - name: Terraform Init tf-test-automation
-      working-directory: ./tf-test-automation/services/mysql
-      id: init1
-      run: |
-        terraform init --backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" --backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}"
-    - name: Terraform Validate tf-test-automation
-      working-directory: ./tf-test-automation/services/mysql
-      id: validate1
-      run: terraform validate -no-color
-    - name: Terraform Apply tf-test-automation
-      working-directory: ./tf-test-automation/services/mysql
-      id: mysql_url
-      run: |
-        terraform apply -auto-approve -var="db_password=public123" -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}"
-        echo "::set-output name=mysql_url::$(terraform output endpoint)"
-    - name: Rename and upload mysql tfstate
-      working-directory: ./tf-test-automation/services/mysql
-      run: |
-        mv ./terraform.tfstate ./mysql.tfstate
-    - uses: actions/upload-artifact@v2
-      if: always()
-      with:
-        name: tfstate
-        path: ./tf-test-automation/services/mysql/mysql.tfstate
-    - name: Show mysql url
-      id: mysql_ip
-      run: |
-        ip=`echo "${{ steps.mysql_url.outputs.mysql_url }}"|awk -F ':' '{print $1}'`
-        echo "::set-output name=mysql_ip::$ip"
-    - name: Show mysql ip
-      run: |
-        echo ${{ steps.mysql_url.outputs.mysql_url }}
-        echo ${{ steps.mysql_ip.outputs.mysql_ip }}
+#  terraform_mysql:
+#    runs-on: ubuntu-latest
+#
+#    outputs:
+#      mysql_ip: ${{ steps.mysql_ip.outputs.mysql_ip }}
+#      mysql_url: ${{ steps.mysql_url.outputs.mysql_url }}
+#    steps:
+#    - name: Checkout tf-test-automation
+#      uses: actions/checkout@v2
+#      with:
+#        repository: emqx/tf-test-automation
+#        ref: emqx-broker
+#        path: tf-test-automation
+#    - name: Setup Terraform
+#      uses: hashicorp/setup-terraform@v1.3.2
+#      with:
+#        terraform_wrapper: false
+#    - name: Terraform Init tf-test-automation
+#      working-directory: ./tf-test-automation/services/mysql
+#      id: init1
+#      run: |
+#        terraform init --backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" --backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}"
+#    - name: Terraform Validate tf-test-automation
+#      working-directory: ./tf-test-automation/services/mysql
+#      id: validate1
+#      run: terraform validate -no-color
+#    - name: Terraform Apply tf-test-automation
+#      working-directory: ./tf-test-automation/services/mysql
+#      id: mysql_url
+#      run: |
+#        terraform apply -auto-approve -var="db_password=public123" -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}"
+#        echo "::set-output name=mysql_url::$(terraform output endpoint)"
+#    - name: Rename and upload mysql tfstate
+#      working-directory: ./tf-test-automation/services/mysql
+#      run: |
+#        mv ./terraform.tfstate ./mysql.tfstate
+#    - uses: actions/upload-artifact@v2
+#      if: always()
+#      with:
+#        name: tfstate
+#        path: ./tf-test-automation/services/mysql/mysql.tfstate
+#    - name: Show mysql url
+#      id: mysql_ip
+#      run: |
+#        ip=`echo "${{ steps.mysql_url.outputs.mysql_url }}"|awk -F ':' '{print $1}'`
+#        echo "::set-output name=mysql_ip::$ip"
+#    - name: Show mysql ip
+#      run: |
+#        echo ${{ steps.mysql_url.outputs.mysql_url }}
+#        echo ${{ steps.mysql_ip.outputs.mysql_ip }}
 
 #  terraform_redis:
 #    runs-on: ubuntu-latest
