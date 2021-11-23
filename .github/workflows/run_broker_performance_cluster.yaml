@@ -11,135 +11,135 @@ on:
 #  workflow_dispatch:
 
 jobs:
-#  build:
-#    runs-on: ubuntu-20.04
-#
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        otp:
-#          - 24.1.1-emqx-1
-#        os:
-#          - ubuntu20.04
-#
-#    container: "ghcr.io/emqx/emqx-builder/5.0:${{ matrix.otp }}-${{ matrix.os }}"
-#
-#    steps:
-#    - uses: actions/checkout@v1
-#    - name: prepare
-#      run: |
-#        if make emqx-ee --dry-run > /dev/null 2>&1; then
-#          echo "https://ci%40emqx.io:${{ secrets.CI_GIT_TOKEN }}@github.com" > $HOME/.git-credentials
-#          git config --global credential.helper store
-#          echo "${{ secrets.CI_GIT_TOKEN }}" >> ./scripts/git-token
-#          echo "EMQX_NAME=emqx-ee" >> $GITHUB_ENV
-#        else
-#          echo "EMQX_NAME=emqx" >> $GITHUB_ENV
-#        fi
-#    - name: build zip packages
-#      run: make ${EMQX_NAME}-zip
-#    - uses: actions/upload-artifact@v1
-#      if: failure()
-#      with:
-#        name: rebar3.crashdump
-#        path: ./rebar3.crashdump
-#    - name: pakcages test
-#      run: |
-#        export CODE_PATH=$GITHUB_WORKSPACE
-#        .ci/build_packages/tests.sh
-#    - uses: actions/upload-artifact@v2
-#      with:
-#        name: ${{ matrix.os}}
-#        path: _packages/**/*.zip
+  build:
+    runs-on: ubuntu-20.04
 
-  xmeter_start:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        otp:
+          - 24.1.1-emqx-1
+        os:
+          - ubuntu20.04
+
+    container: "ghcr.io/emqx/emqx-builder/5.0:${{ matrix.otp }}-${{ matrix.os }}"
 
     steps:
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}
-        aws-region: ap-southeast-1
-    - name: Start Xmeter Services
+    - uses: actions/checkout@v1
+    - name: prepare
       run: |
-        aws ec2 start-instances --instance-ids i-0dd6d99916baaa1a8
-        aws ec2 start-instances --instance-ids i-05222103df01eb2d7
-        sleep 40;
-        aws ec2 start-instances --instance-ids i-0c5dccd394ed9be18
-        aws ec2 start-instances --instance-ids i-04c1c50b3e4952266
+        if make emqx-ee --dry-run > /dev/null 2>&1; then
+          echo "https://ci%40emqx.io:${{ secrets.CI_GIT_TOKEN }}@github.com" > $HOME/.git-credentials
+          git config --global credential.helper store
+          echo "${{ secrets.CI_GIT_TOKEN }}" >> ./scripts/git-token
+          echo "EMQX_NAME=emqx-ee" >> $GITHUB_ENV
+        else
+          echo "EMQX_NAME=emqx" >> $GITHUB_ENV
+        fi
+    - name: build zip packages
+      run: make ${EMQX_NAME}-zip
+    - uses: actions/upload-artifact@v1
+      if: failure()
+      with:
+        name: rebar3.crashdump
+        path: ./rebar3.crashdump
+    - name: pakcages test
+      run: |
+        export CODE_PATH=$GITHUB_WORKSPACE
+        .ci/build_packages/tests.sh
+    - uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.os}}
+        path: _packages/**/*.zip
 
-#  terraform_emqx:
+#  xmeter_start:
 #    runs-on: ubuntu-latest
 #
-#    needs: [build]
-#    outputs:
-#      emqx_public_ip: ${{ steps.emqx_private_ip.outputs.emqx_public_ip }}
-#      emqx_node_ip1: ${{ steps.emqx_private_ip.outputs.emqx_node_ip1 }}
-#      emqx_node_ip2: ${{ steps.emqx_private_ip.outputs.emqx_node_ip2 }}
-#      emqx_node_ip3: ${{ steps.emqx_private_ip.outputs.emqx_node_ip3 }}
 #    steps:
-#    - uses: actions/checkout@v2
-#    - uses: actions/download-artifact@v2
+#    - name: Configure AWS Credentials
+#      uses: aws-actions/configure-aws-credentials@v1
 #      with:
-#        name: ubuntu20.04
-#        path: /tmp
-#    - name: Download emqx package
+#        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}
+#        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}
+#        aws-region: ap-southeast-1
+#    - name: Start Xmeter Services
 #      run: |
-#        sudo cp /tmp/emqx/*.zip /tmp/emqx.zip
-#    - name: Checkout tf-test-automation
-#      uses: actions/checkout@v2
-#      with:
-#        repository: emqx/tf-test-automation
-#        ref: emqx-broker
-#        path: tf-test-automation
-#    - name: Setup Terraform
-#      uses: hashicorp/setup-terraform@v1.3.2
-#      with:
-#        terraform_wrapper: false
-#    - name: Terraform Init tf-test-automation
-#      working-directory: ./tf-test-automation/services/emqx
-#      id: init1
-#      run: |
-#        terraform init --backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" --backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}"
-#    - name: Terraform Validate tf-test-automation
-#      working-directory: ./tf-test-automation/services/emqx
-#      id: validate1
-#      run: terraform validate -no-color
-#    - name: Terraform Apply tf-test-automation
-#      working-directory: ./tf-test-automation/services/emqx
-#      id: server_ip
-#      run: |
-#        terraform apply -auto-approve -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}" -var="private_key=${{ secrets.CI_SSH_PRIVATE_KEY }}" -var="emqx_package=/tmp/emqx.zip"
-#        echo "::set-output name=emqx_private_ips::$(terraform output emqx_private_ips)"
-#        echo "::set-output name=emqx_public_ips::$(terraform output emqx_public_ips)"
-#    - name: Rename and upload emqx tfstate
-#      working-directory: ./tf-test-automation/services/emqx
-#      run: |
-#        mv ./terraform.tfstate ./emqx.tfstate
-#    - uses: actions/upload-artifact@v2
-#      if: always()
-#      with:
-#        name: tfstate
-#        path: ./tf-test-automation/services/emqx/emqx.tfstate
-#    - name: Show emqx_private_ips
-#      id: emqx_private_ip
-#      run: |
-#        ip1=`echo "${{ steps.server_ip.outputs.emqx_private_ips }}"|awk -F ',' '{print $1}'`
-#        ip2=`echo "${{ steps.server_ip.outputs.emqx_private_ips }}"|awk -F ',' '{print $2}'`
-#        ip3=`echo "${{ steps.server_ip.outputs.emqx_private_ips }}"|awk -F ',' '{print $3}'`
-#        emqx_public_ip=`echo "${{ steps.server_ip.outputs.emqx_public_ips }}"|awk -F ',' '{print $1}'`
-#        echo "::set-output name=emqx_node_ip1::$ip1"
-#        echo "::set-output name=emqx_node_ip2::$ip2"
-#        echo "::set-output name=emqx_node_ip3::$ip3"
-#        echo "::set-output name=emqx_public_ip::$emqx_public_ip"
-#    - name: Show emqx node ip
-#      run: |
-#        echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip1 }}
-#        echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip2 }}
-#        echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip3 }}
-#        echo ${{ steps.emqx_private_ip.outputs.emqx_public_ip }}
+#        aws ec2 start-instances --instance-ids i-0dd6d99916baaa1a8
+#        aws ec2 start-instances --instance-ids i-05222103df01eb2d7
+#        sleep 40;
+#        aws ec2 start-instances --instance-ids i-0c5dccd394ed9be18
+#        aws ec2 start-instances --instance-ids i-04c1c50b3e4952266
+
+  terraform_emqx:
+    runs-on: ubuntu-latest
+
+    needs: [build]
+    outputs:
+      emqx_public_ip: ${{ steps.emqx_private_ip.outputs.emqx_public_ip }}
+      emqx_node_ip1: ${{ steps.emqx_private_ip.outputs.emqx_node_ip1 }}
+      emqx_node_ip2: ${{ steps.emqx_private_ip.outputs.emqx_node_ip2 }}
+      emqx_node_ip3: ${{ steps.emqx_private_ip.outputs.emqx_node_ip3 }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/download-artifact@v2
+      with:
+        name: ubuntu20.04
+        path: /tmp
+    - name: Download emqx package
+      run: |
+        sudo cp /tmp/emqx/*.zip /tmp/emqx.zip
+    - name: Checkout tf-test-automation
+      uses: actions/checkout@v2
+      with:
+        repository: emqx/tf-test-automation
+        ref: emqx-broker
+        path: tf-test-automation
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v1.3.2
+      with:
+        terraform_wrapper: false
+    - name: Terraform Init tf-test-automation
+      working-directory: ./tf-test-automation/services/emqx
+      id: init1
+      run: |
+        terraform init --backend-config="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" --backend-config="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}"
+    - name: Terraform Validate tf-test-automation
+      working-directory: ./tf-test-automation/services/emqx
+      id: validate1
+      run: terraform validate -no-color
+    - name: Terraform Apply tf-test-automation
+      working-directory: ./tf-test-automation/services/emqx
+      id: server_ip
+      run: |
+        terraform apply -auto-approve -var="access_key=${{ secrets.AWS_ACCESS_KEY_ID_FOR_PERFORMANCE_TESTING }}" -var="secret_key=${{ secrets.AWS_SECRET_ACCESS_KEY_FOR_PERFORMANCE_TESTING }}" -var="private_key=${{ secrets.CI_SSH_PRIVATE_KEY }}" -var="emqx_package=/tmp/emqx.zip"
+        echo "::set-output name=emqx_private_ips::$(terraform output emqx_private_ips)"
+        echo "::set-output name=emqx_public_ips::$(terraform output emqx_public_ips)"
+    - name: Rename and upload emqx tfstate
+      working-directory: ./tf-test-automation/services/emqx
+      run: |
+        mv ./terraform.tfstate ./emqx.tfstate
+    - uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: tfstate
+        path: ./tf-test-automation/services/emqx/emqx.tfstate
+    - name: Show emqx_private_ips
+      id: emqx_private_ip
+      run: |
+        ip1=`echo "${{ steps.server_ip.outputs.emqx_private_ips }}"|awk -F ',' '{print $1}'`
+        ip2=`echo "${{ steps.server_ip.outputs.emqx_private_ips }}"|awk -F ',' '{print $2}'`
+        ip3=`echo "${{ steps.server_ip.outputs.emqx_private_ips }}"|awk -F ',' '{print $3}'`
+        emqx_public_ip=`echo "${{ steps.server_ip.outputs.emqx_public_ips }}"|awk -F ',' '{print $1}'`
+        echo "::set-output name=emqx_node_ip1::$ip1"
+        echo "::set-output name=emqx_node_ip2::$ip2"
+        echo "::set-output name=emqx_node_ip3::$ip3"
+        echo "::set-output name=emqx_public_ip::$emqx_public_ip"
+    - name: Show emqx node ip
+      run: |
+        echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip1 }}
+        echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip2 }}
+        echo ${{ steps.emqx_private_ip.outputs.emqx_node_ip3 }}
+        echo ${{ steps.emqx_private_ip.outputs.emqx_public_ip }}
 
   terraform_mysql:
     runs-on: ubuntu-latest
