@@ -24,7 +24,7 @@ jobs:
         os:
         - ubuntu20.04
 
-    container: "ghcr.io/emqx/emqx-builder/5.0:${{ matrix.otp }}-${{ matrix.os }}"
+    container: "ghcr.io/emqx/emqx-builder/5.0-2:${{ matrix.otp }}-${{ matrix.os }}"
 
     steps:
     - uses: actions/checkout@v1
