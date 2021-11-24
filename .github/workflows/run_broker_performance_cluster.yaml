@@ -17,36 +17,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        profile:
+        - emqx
         otp:
-          - 24.1.1-emqx-1
+        - 24.1.5-2
         os:
-          - ubuntu20.04
+        - ubuntu20.04
 
     container: "ghcr.io/emqx/emqx-builder/5.0:${{ matrix.otp }}-${{ matrix.os }}"
 
     steps:
     - uses: actions/checkout@v1
-    - name: prepare
-      run: |
-        if make emqx-ee --dry-run > /dev/null 2>&1; then
-          echo "https://ci%40emqx.io:${{ secrets.CI_GIT_TOKEN }}@github.com" > $HOME/.git-credentials
-          git config --global credential.helper store
-          echo "${{ secrets.CI_GIT_TOKEN }}" >> ./scripts/git-token
-          echo "EMQX_NAME=emqx-ee" >> $GITHUB_ENV
-        else
-          echo "EMQX_NAME=emqx" >> $GITHUB_ENV
-        fi
     - name: build zip packages
-      run: make ${EMQX_NAME}-zip
-    - uses: actions/upload-artifact@v1
-      if: failure()
-      with:
-        name: rebar3.crashdump
-        path: ./rebar3.crashdump
-    - name: pakcages test
+      run: make ${{ matrix.profile }}-zip
+    - name: packages test
       run: |
         export CODE_PATH=$GITHUB_WORKSPACE
-        .ci/build_packages/tests.sh
+        EMQX_NAME=${{ matrix.profile }} .ci/build_packages/tests.sh
     - uses: actions/upload-artifact@v2
       with:
         name: ${{ matrix.os}}
